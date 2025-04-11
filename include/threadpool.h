@@ -7,7 +7,7 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-
+#include <functional>
 /*
  * Abstact class Task
  * Users can inherit this class to implement their own task by overriding the run() method
@@ -29,11 +29,14 @@ enum class PoolMode
 class Thread
 {
 public:
-    Thread();
+    using ThreadFunc = std::function<void()>; // Thread function type
+    Thread(ThreadFunc func);
     ~Thread();
 
     void start();
+
 private:
+    ThreadFunc threadFunc_; // Thread function
 };
 
 // The Class ThreadPool
@@ -46,11 +49,13 @@ public:
     void setMode(PoolMode mode);                 // Set the pool mode
     void setTaskQueMaxSize(size_t size);         // Set the task queue size
     void submitTask(std::shared_ptr<Task> task); // Submit the task to the thread pool
-    void start(int initThreadSize=4);              // Start the thread pool
+    void start(int initThreadSize = 4);          // Start the thread pool
 
     ThreadPool(const ThreadPool &) = delete;
     ThreadPool &operator=(const ThreadPool &) = delete;
 
+private:
+    void threadFunc(); // Thread function
 private:
     std::vector<Thread *> threads_; // Threads
     size_t threadSize_;             // Thread Size
