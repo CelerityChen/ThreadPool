@@ -39,10 +39,56 @@ sem.wait();        // 获取资源
 sem.post();        // 释放资源
 ```
 
-### 3. ThreadPool 线程池
-提供两种工作模式：
-- `MODE_FIXED`: 固定大小的线程池
-- `MODE_CACHED`: 动态扩展的线程池
+### 3. Task 类
+- 抽象基类，用于定义任务接口
+- 主要成员：
+  - `result_`: 指向任务执行结果的指针
+- 主要方法：
+  - `run()`: 纯虚函数，需要由用户继承实现具体的任务逻辑
+  - `exec()`: 执行任务并设置结果
+  - `setResult()`: 设置结果对象
+
+### 4. Result 类
+- 用于接收和存储任务执行结果
+- 主要成员：
+  - `any_`: 存储任意类型的任务结果
+  - `sem_`: 信号量，用于同步任务执行
+  - `task_`: 关联的任务对象
+  - `isValid_`: 结果有效性标志
+- 主要方法：
+  - `setVal()`: 设置任务结果
+  - `get()`: 获取任务结果
+
+### 5. Thread 类
+- 线程封装类
+- 主要成员：
+  - `threadFunc_`: 线程执行函数
+  - `threadId_`: 线程ID
+  - `generateId_`: 静态成员，用于生成线程ID
+- 主要方法：
+  - `start()`: 启动线程
+  - `getThreadId()`: 获取线程ID
+
+### 6. ThreadPool 类
+- 线程池核心类
+- 主要成员：
+  - `threads_`: 线程集合，使用 `std::unordered_map` 管理
+  - `taskQue_`: 任务队列，使用 `std::queue` 存储
+  - `taskSize_`: 当前任务数量
+  - `maxTaskQueSize_`: 最大任务队列大小
+  - `poolMode_`: 线程池模式（固定/动态）
+  - `initThreadSize_`: 初始线程数量
+  - `maxThreadSize_`: 最大线程数量
+  - `curThreadSize_`: 当前线程数量
+  - `idleThreadSize_`: 空闲线程数量
+- 主要方法：
+  - `setMode()`: 设置线程池模式
+  - `setThreadMaxSize()`: 设置最大线程数
+  - `setTaskQueMaxSize()`: 设置任务队列大小
+  - `submitTask()`: 提交任务
+  - `start()`: 启动线程池
+  - `threadFunc()`: 线程执行函数
+  - `checkRunningState()`: 检查线程池运行状态
 
 主要功能：
 - 设置线程池模式
