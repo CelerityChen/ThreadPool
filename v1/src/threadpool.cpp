@@ -1,9 +1,9 @@
-#include "threadpool.h"
+#include "../include/threadpool.h"
 #include <thread>
 #include <iostream>
 const int TASK_MAX_THRESHOLD = 1024;
 const int THREAD_MAX_SIZE = 10;
-const int THREAD_IDLE_MAX_TIME = 60;
+const int THREAD_IDLE_MAX_TIME = 5;
 Thread::Thread(ThreadFunc func) : threadFunc_(func), threadId_(generateId_++)
 {
 }
@@ -78,7 +78,7 @@ Result ThreadPool::submitTask(std::shared_ptr<Task> task)
                            { return taskQue_.size() < maxTaskQueSize_; }))
     {
         std::cerr << "Task queue is full, submit task failed" << std::endl;
-        // 等待超时，返回false表示提交失败
+        // 使用移动语义返回Result对象
         return Result(task, false);
     }
 
@@ -100,6 +100,8 @@ Result ThreadPool::submitTask(std::shared_ptr<Task> task)
         curThreadSize_.fetch_add(1);
         idleThreadSize_.fetch_add(1);
     }
+    
+    // 使用移动语义返回Result对象
     return Result(task, true);
 }
 

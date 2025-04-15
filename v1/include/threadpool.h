@@ -63,6 +63,29 @@ class Semaphore
 public:
     Semaphore(int limit = 0) : resLimit_(limit) {};
     ~Semaphore() = default;
+    
+    // 添加移动构造函数
+    Semaphore(Semaphore&& other) noexcept
+        : resLimit_(other.resLimit_)
+    {
+        other.resLimit_ = 0;
+    }
+    
+    // 添加移动赋值运算符
+    Semaphore& operator=(Semaphore&& other) noexcept
+    {
+        if (this != &other)
+        {
+            resLimit_ = other.resLimit_;
+            other.resLimit_ = 0;
+        }
+        return *this;
+    }
+    
+    // 显式删除拷贝构造函数和拷贝赋值运算符
+    Semaphore(const Semaphore&) = delete;
+    Semaphore& operator=(const Semaphore&) = delete;
+    
     // wait for the resource
     void wait()
     {
@@ -94,6 +117,35 @@ class Result
 public:
     Result(std::shared_ptr<Task> task, bool isValid = true);
     ~Result();
+    
+    // 自定义移动构造函数
+    Result(Result&& other) noexcept
+        : any_(std::move(other.any_)),
+          sem_(std::move(other.sem_)),
+          task_(std::move(other.task_)),
+          isValid_(other.isValid_.load())
+    {
+        other.isValid_ = false;
+    }
+    
+    // 自定义移动赋值运算符
+    Result& operator=(Result&& other) noexcept
+    {
+        if (this != &other)
+        {
+            any_ = std::move(other.any_);
+            sem_ = std::move(other.sem_);
+            task_ = std::move(other.task_);
+            isValid_ = other.isValid_.load();
+            other.isValid_ = false;
+        }
+        return *this;
+    }
+    
+    // 显式删除拷贝构造函数和拷贝赋值运算符
+    Result(const Result&) = delete;
+    Result& operator=(const Result&) = delete;
+    
     void setVal(Any any);
     Any get();
 

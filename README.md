@@ -69,35 +69,84 @@ make
 ```cpp
 #include "threadpool.h"
 #include <iostream>
+#include <string>
+#include <chrono>
+#include <thread>
+#include <memory>
 
-// 自定义任务类
-class MyTask : public Task {
+/*
+ * Example:
+ * ThreadPool pool;
+ * pool.start(4);
+ *
+ * class MyTask : public Task{
+ * public:
+ *      void run(){
+ *          // Task body, like downloading, processing, etc.
+ *          std::cout << "Task is running" << std::endl;
+ *      }
+ * };
+ *
+ * pool.submitTask(std::make_shared<MyTask>());
+ *
+ *
+ * */
+
+// 示例1：返回int类型的任务
+class AddTask : public Task
+{
 public:
-    void run() override {
-        // 实现具体的任务逻辑
-        std::cout << "Task is running" << std::endl;
+    AddTask(int a, int b) : a_(a), b_(b) {}
+    Any run() override
+    {
+        std::cout << "AddTask running in thread: " << std::this_thread::get_id() << std::endl;
+        unsigned long long sum = 0;
+        for (int i = a_; i <= b_; ++i)
+        {
+            sum += i;
+        }
+        return sum;
     }
+
+private:
+    int a_;
+    int b_;
 };
 
-int main() {
+// 示例2：返回string类型的任务
+class ConcatTask : public Task
+{
+public:
+    ConcatTask(const std::string &a, const std::string &b)
+        : a_(a), b_(b) {}
+    Any run() override
+    {
+        std::cout << "ConcatTask running in thread: " << std::this_thread::get_id() << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(1)); // 模拟耗时操作
+        return a_ + b_;
+    }
+
+private:
+    std::string a_;
+    std::string b_;
+};
+
+int main()
+{
     // 创建线程池
     ThreadPool pool;
-    
-    // 设置线程池模式
-    pool.setMode(PoolMode::MODE_FIXED);
-    
-    // 设置任务队列大小
-    pool.setTaskQueMaxSize(1024);
-    
-    // 启动线程池
-    pool.start(4);  // 启动4个线程
-    
-    // 提交任务
-    auto task = std::make_shared<MyTask>();
-    pool.submitTask(task);
-    
+    pool.start(4);
+
+    Result res1 = pool.submitTask(std::make_shared<AddTask>(1, 100000000));
+    Result res2 = pool.submitTask(std::make_shared<AddTask>(100000001, 200000000));
+    Result res3 = pool.submitTask(std::make_shared<AddTask>(200000001, 300000000));
+
+    unsigned long long sum = res1.get().cast_<unsigned long long>() + res2.get().cast_<unsigned long long>() + res3.get().cast_<unsigned long long>();
+    std::cout << "Sum: " << sum << std::endl;
+
     return 0;
 }
+
 ```
 
 ## 注意事项
@@ -105,3 +154,6 @@ int main() {
 2. 线程池默认使用固定模式，可以通过 `setMode()` 切换为缓存模式
 3. 使用智能指针管理任务生命周期，避免内存泄漏
 4. 线程池启动后会自动管理线程的创建和销毁
+5. 使用 `submitTask` 提交任务时，会返回 `Result` 对象，通过 `get()` 方法获取结果
+6. 使用 `Any` 类存储任意类型的返回值，通过 `cast_<T>()` 方法获取具体类型的值
+7. 如果任务提交失败（队列满或超时），返回的 `Result` 对象将无效
