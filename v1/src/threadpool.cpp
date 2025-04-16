@@ -100,7 +100,7 @@ Result ThreadPool::submitTask(std::shared_ptr<Task> task)
         curThreadSize_.fetch_add(1);
         idleThreadSize_.fetch_add(1);
     }
-    
+
     // 使用移动语义返回Result对象
     return Result(task, true);
 }
@@ -134,12 +134,12 @@ void ThreadPool::start(int initThreadSize)
 // Thread pool get the task and run it
 void ThreadPool::threadFunc(int threadId)
 {
+    auto lastTime = std::chrono::high_resolution_clock().now();
     // std::cout << "Begin to run the thread function" << std::endl;
     // std::cout << "Thread ID: " << std::this_thread::get_id() << std::endl;
     // std::cout << "The end of the thread function" << std::endl;
     while (isPoolRunning_)
     {
-        auto lastTime = std::chrono::high_resolution_clock().now();
         std::shared_ptr<Task> task = nullptr;
         { // 1. get the lock
             std::unique_lock<std::mutex> lock(taskQueMtx_);
@@ -148,6 +148,7 @@ void ThreadPool::threadFunc(int threadId)
             // under cached mode, maybe there are many threads. If the idle time > 60s, redundant threads should be over, the part that exceed the initThreadSize.
             while (taskQue_.size() == 0)
             {
+                // If the thread pool is in cached mode, the thread should be recycled if it is idle for too long. Otherwise, the thread should wait for the task.
                 if (poolMode_ == PoolMode::MODE_CACHED)
                 {
                     // if conditional variable return timeout
@@ -160,8 +161,8 @@ void ThreadPool::threadFunc(int threadId)
                         {
                             // recycle current threads
                             threads_.erase(threadId);
-                            curThreadSize_.fetch_sub(1);
-                            idleThreadSize_.fetch_sub(1);
+                            --curThreadSize_;
+                            --idleThreadSize_;
                             std::cout << "Thread " << threadId << " is idle for too long, recycle..." << std::endl;
                             return;
                         }
@@ -172,7 +173,7 @@ void ThreadPool::threadFunc(int threadId)
                     // 2. wait until the task queue is not empty
                     notEmpty_.wait(lock);
                 }
-                // 3. check if the thread pool is running, if not, exit the thread
+                // 3. When the thread is waked up, check if the thread pool is running, if not, exit the thread
                 if (!isPoolRunning_)
                 {
                     threads_.erase(threadId);
@@ -204,9 +205,10 @@ void ThreadPool::threadFunc(int threadId)
             task->exec();
 
         idleThreadSize_.fetch_add(1);
+        lastTime = std::chrono::high_resolution_clock().now();
     }
 
-    // 6. exit the thread
+    // 6. exit the thread, if the thread pool is not running
     threads_.erase(threadId);
     std::cout << "Thread " << threadId << " is exiting..." << std::endl;
     exitCv_.notify_all();

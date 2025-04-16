@@ -63,16 +63,16 @@ class Semaphore
 public:
     Semaphore(int limit = 0) : resLimit_(limit) {};
     ~Semaphore() = default;
-    
+
     // 添加移动构造函数
-    Semaphore(Semaphore&& other) noexcept
+    Semaphore(Semaphore &&other) noexcept
         : resLimit_(other.resLimit_)
     {
         other.resLimit_ = 0;
     }
-    
+
     // 添加移动赋值运算符
-    Semaphore& operator=(Semaphore&& other) noexcept
+    Semaphore &operator=(Semaphore &&other) noexcept
     {
         if (this != &other)
         {
@@ -81,11 +81,11 @@ public:
         }
         return *this;
     }
-    
+
     // 显式删除拷贝构造函数和拷贝赋值运算符
-    Semaphore(const Semaphore&) = delete;
-    Semaphore& operator=(const Semaphore&) = delete;
-    
+    Semaphore(const Semaphore &) = delete;
+    Semaphore &operator=(const Semaphore &) = delete;
+
     // wait for the resource
     void wait()
     {
@@ -117,9 +117,9 @@ class Result
 public:
     Result(std::shared_ptr<Task> task, bool isValid = true);
     ~Result();
-    
+
     // 自定义移动构造函数
-    Result(Result&& other) noexcept
+    Result(Result &&other) noexcept
         : any_(std::move(other.any_)),
           sem_(std::move(other.sem_)),
           task_(std::move(other.task_)),
@@ -127,9 +127,9 @@ public:
     {
         other.isValid_ = false;
     }
-    
+
     // 自定义移动赋值运算符
-    Result& operator=(Result&& other) noexcept
+    Result &operator=(Result &&other) noexcept
     {
         if (this != &other)
         {
@@ -141,11 +141,11 @@ public:
         }
         return *this;
     }
-    
+
     // 显式删除拷贝构造函数和拷贝赋值运算符
-    Result(const Result&) = delete;
-    Result& operator=(const Result&) = delete;
-    
+    Result(const Result &) = delete;
+    Result &operator=(const Result &) = delete;
+
     void setVal(Any any);
     Any get();
 
@@ -203,11 +203,11 @@ public:
     ThreadPool();
     ~ThreadPool();
 
-    void setMode(PoolMode mode);                   // Set the pool mode
-    void setThreadMaxSize(size_t size);            // Set the max thread size
-    void setTaskQueMaxSize(size_t size);           // Set the task queue size
-    Result submitTask(std::shared_ptr<Task> task); // Submit the task to the thread pool
-    void start(int initThreadSize = 4);            // Start the thread pool
+    void setMode(PoolMode mode);                                          // Set the pool mode
+    void setThreadMaxSize(size_t size);                                   // Set the max thread size
+    void setTaskQueMaxSize(size_t size);                                  // Set the task queue size
+    Result submitTask(std::shared_ptr<Task> task);                        // Submit the task to the thread pool
+    void start(int initThreadSize = std::thread::hardware_concurrency()); // Start the thread pool
 
     ThreadPool(const ThreadPool &) = delete;
     ThreadPool &operator=(const ThreadPool &) = delete;
@@ -231,7 +231,7 @@ private:
     std::mutex taskQueMtx_;            // Task Queue Mutex to protect the task queue
     std::condition_variable notEmpty_; // Condition Variable to notify the thread that the task queue is not empty
     std::condition_variable notFull_;  // Condition Variable to notify the thread that the task queue is not full
-    std::condition_variable exitCv_; // Condition Variable to notify the thread that the thread pool is exiting
+    std::condition_variable exitCv_;   // Condition Variable to notify the thread that the thread pool is exiting
 
     PoolMode poolMode_;              // Pool Mode
     std::atomic_bool isPoolRunning_; // state of the pool running or not

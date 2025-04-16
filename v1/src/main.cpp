@@ -1,4 +1,4 @@
-#include "threadpool.h"
+#include "../include/threadpool.h"
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -65,6 +65,29 @@ private:
 
 int main()
 {
+    {
+        ThreadPool pool;
+        pool.setMode(PoolMode::MODE_CACHED);
+        pool.start(4);
+
+        Result res1 = pool.submitTask(std::make_shared<AddTask>(1, 100000000));
+        Result res2 = pool.submitTask(std::make_shared<AddTask>(100000001, 200000000));
+        Result res3 = pool.submitTask(std::make_shared<AddTask>(200000001, 300000000));
+        pool.submitTask(std::make_shared<AddTask>(200000001, 300000000));
+        pool.submitTask(std::make_shared<AddTask>(200000001, 300000000));
+        pool.submitTask(std::make_shared<AddTask>(200000001, 300000000));
+        pool.submitTask(std::make_shared<AddTask>(200000001, 300000000));
+        pool.submitTask(std::make_shared<AddTask>(200000001, 300000000));
+        pool.submitTask(std::make_shared<AddTask>(200000001, 300000000));
+        unsigned long long sum1 = res1.get().cast_<unsigned long long>();
+        unsigned long long sum2 = res2.get().cast_<unsigned long long>();
+        unsigned long long sum3 = res3.get().cast_<unsigned long long>();
+        std::cout << "Sum: " << sum1 + sum2 + sum3 << std::endl;
+    }
+
+    std::cout << "main over!" << std::endl;
+
+#if 0
     // 创建线程池
     ThreadPool pool;
     // 设置线程池模式
@@ -82,5 +105,6 @@ int main()
     std::cout << "Sum: " << sum << std::endl;
 
     getchar();
+#endif
     return 0;
 }
